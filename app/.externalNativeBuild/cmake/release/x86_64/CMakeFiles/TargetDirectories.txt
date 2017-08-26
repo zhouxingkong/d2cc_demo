@@ -1,0 +1,3 @@
+E:/git601/d2cc_demo/app/.externalNativeBuild/cmake/release/x86_64/CMakeFiles/d2cc.dir
+E:/git601/d2cc_demo/app/.externalNativeBuild/cmake/release/x86_64/CMakeFiles/edit_cache.dir
+E:/git601/d2cc_demo/app/.externalNativeBuild/cmake/release/x86_64/CMakeFiles/rebuild_cache.dir

@@ -1,0 +1,7 @@
+# ninja log v5
+0	944	0	CMakeFiles/d2cc.dir/d2cc.cpp.o	43ce3d962d74226c
+42	1008	0	CMakeFiles/d2cc.dir/mains.cpp.o	d6f20dee30657dc8
+1009	1546	0	E:/git601/d2cc_demo/app/build/intermediates/cmake/debug/obj/x86_64/libd2cc.so	e02bd3f3ab9cb927
+3	683	0	CMakeFiles/d2cc.dir/d2cc.cpp.o	43ce3d962d74226c
+29	709	0	CMakeFiles/d2cc.dir/mains.cpp.o	d6f20dee30657dc8
+709	1007	0	E:/git601/d2cc_demo/app/build/intermediates/cmake/debug/obj/x86_64/libd2cc.so	e02bd3f3ab9cb927

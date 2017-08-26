@@ -1,0 +1,17 @@
+Executable : D:\android-sdk\cmake\3.6.4111459\bin\cmake.exe
+arguments : 
+-HE:\git601\d2cc_demo\app\src\main\jni
+-BE:\git601\d2cc_demo\app\.externalNativeBuild\cmake\release\arm64-v8a
+-GAndroid Gradle - Ninja
+-DANDROID_ABI=arm64-v8a
+-DANDROID_NDK=D:\android-sdk\ndk-bundle
+-DCMAKE_LIBRARY_OUTPUT_DIRECTORY=E:\git601\d2cc_demo\app\build\intermediates\cmake\release\obj\arm64-v8a
+-DCMAKE_BUILD_TYPE=Release
+-DCMAKE_MAKE_PROGRAM=D:\android-sdk\cmake\3.6.4111459\bin\ninja.exe
+-DCMAKE_TOOLCHAIN_FILE=D:\android-sdk\ndk-bundle\build\cmake\android.toolchain.cmake
+-DANDROID_PLATFORM=android-21
+-DANDROID_PLATFORM=android-14
+-DANDROID_TOOLCHAIN=clang
+-DANDROID_STL=gnustl_static
+jvmArgs : 
+
