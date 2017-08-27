@@ -74,17 +74,13 @@ private:
     Fifo fifoRead;
     Fifo fifoProc;
 
-    unsigned char InBuff[NrBuf][LENGTH];   //输入数据缓冲区
-    int InbuffLength[NrBuf]; //输入数据缓冲区中的数据个数（待预处理）
-    unsigned char ProcBuff[NrBuf][LENGTH];   //存储预处理后的数据
-    int ProcbuffLength[NrBuf]; //输入数据缓冲区中的数据个数（待预处理）
-
     unsigned char OutBuff[LENGTH];  //数据发送缓冲区
 
     unsigned char *read_buffer;  //USB读写缓存(指向InBuff中的一行)
     unsigned char *proc_buffer;  //正在预处理的数据(指向InBuff中的一行)
     unsigned char *out_pos;  //正在预处理的数据(指向InBuff中的一行)
-    int proc_buff_length = 0;
+    int read_out_buff_length = 0;
+    int proc_in_buff_length=0;
 
     int fd;
     int endPointIn;
@@ -94,26 +90,50 @@ private:
 
 //    int actual_read = 0;  //每次读取实际读到的数
     bool isreading = 1;   //是否开始读
+    bool isopen=1;
 protected:
     D2cc();
     static D2cc *mInstance;
 
 public:
     ~D2cc();
-    static D2cc* getInstance();
-    //线程--内部函数
+    //线程--内部函数，用户不能调用
+    void OpenDevice(int fdesc, int epIn, int epOut);    //打开设备
     static void *ReadThreadFun(void *pArguments);
     static void *ProcThreadFun(void *pArguments);
     void ReadLoop();
     void ProcLoop();
-    bool extractReadData(int readindex, int procindex);
+    int extractReadData();
+
     //调用接口
-    void OpenDevice(int fdesc, int epIn, int epOut);    //打开设备
+
+    /* 获取D2cc实例
+     * return:单例模式的D2xx实例
+     * */
+    static D2cc* getInstance();
     void CloseDevice(); //关闭设备
-    int GetAvailable(); //返回接收缓冲区中剩余数据量
+    /*
+     * 返回接收缓冲区中剩余数据量
+     * */
+    int GetAvailable();
+    /* 读取USB任意长度数据
+     * @return:成功接收的字节数，没接收到返回0
+     * @dst:接收数据目的地址
+     * @length:接收数据字节数
+     * @off:数据放在dst数组的位置
+     * */
     int Read(unsigned char *dst, int length,int off);   //任意长度读取
-    int BulkRead(unsigned char *dst, int bulk); //整块数据读取
-    int Write(unsigned char *src, int length);
+    /* 接收一块USB数据，块长度为4096*4（可能比这个少一点）
+     * @return:成功接收的字节数，没接收到返回0
+     * @dst:接收数据目的地址
+     * */
+    int BulkRead(unsigned char *dst); //整块数据读取
+    /* 发送USB数据
+     * @return:成功发送的字节数，没发送成功返回0
+     * @src:发送数据的首地址
+     * @length:发送数据的字节数
+     * */
+    int Write(unsigned char *src, int length);  //写入数据
 
 };
 

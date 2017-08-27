@@ -185,10 +185,6 @@ public class D2ccManager {
                         connection = manager.openDevice(deviceD2cc);
                         if (connection != null&&connection.claimInterface(intf, true)) {
                             setBitMode((byte) 0, FT_BITMODE_SYNC_FIFO);    //配置USB工作在同步FIFO模式
-//                            connection.controlTransfer(64, 11, 64<<8, mInterfaceID, (byte[])null, 0, 0);    //将FTDI芯片配置到同步fifo245模式
-//                            connection.controlTransfer(64, 6, 0, mInterfaceID, (byte[])null, 0, 0);
-//                            connection.controlTransfer(64, 7, 0, mInterfaceID, (byte[])null, 0, 0);
-//                            connection.controlTransfer(64, 9, 16, mInterfaceID, (byte[])null, 0, 0);
                             d2ccDevice.OpenDevice(connection.getFileDescriptor(),inEndPoint,outEndPoint);    //在native代码中打开USB设备文件
                             mIsOpen=true;
                             break;  //找到可读写的节点后就跳出循环
