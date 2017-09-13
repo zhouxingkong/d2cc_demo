@@ -40,8 +40,8 @@ private:
     unsigned char *data[NrBuf];
     int  dataRemain [NrBuf];  //每个缓冲区中剩余字节数
 
-    unsigned char * temp;
-
+    unsigned char * temp_read;
+    unsigned char * temp_write;
     int readIndex=0;
     int writeIndex=0;
 public:
@@ -49,12 +49,14 @@ public:
     ~Fifo();
 
     //为了节省memcpy函数的调用，提高USB读取速度，fifo支持直接对缓冲区进行操作。
+    //这四个函数已废弃
     int getReadBuff(unsigned char ** buff);
     int getWriteBuff(unsigned char ** buff);
     bool ReadDone();    //当直接操作缓冲区Buff读写fifo结束后记得调用这两个函数
     bool WriteDone(int num);
 
     int WriteFifo(unsigned char * src,int length);
+    int WriteFifoBulk(unsigned char ** src,int length);
     int ReadFifo(unsigned char * dst,int length ,int off);
     int ReadFifoBulk(unsigned char ** dst);
 };
@@ -77,8 +79,9 @@ private:
     unsigned char OutBuff[LENGTH];  //数据发送缓冲区
 
     unsigned char *read_buffer;  //USB读写缓存(指向InBuff中的一行)
-    unsigned char *proc_buffer;  //正在预处理的数据(指向InBuff中的一行)
-    unsigned char *out_pos;  //正在预处理的数据(指向InBuff中的一行)
+    unsigned char *proc_in_buffer;  //正在预处理的数据(指向InBuff中的一行)
+    unsigned char *proc_out_buffer;  //正在预处理的数据(指向InBuff中的一行)
+    unsigned char *proc_out_buffer_pos;
     int read_out_buff_length = 0;
     int proc_in_buff_length=0;
 

@@ -43,18 +43,18 @@ void  * ReadDeviceFun(void *pArguments){
     read_buffer_ptr=new unsigned char [4096*4];
     while(isreading) {
 
-//        actual_read_main=d2cc.Read(read_buffer_ptr,4096*16,0);
-        actual_read_main=d2cc.BulkRead(&read_buffer_ptr);
+//        actual_read_main=d2cc.Read(read_buffer_ptr,4096*16,0);      //任意长度数据读取
+        actual_read_main=d2cc.BulkRead(&read_buffer_ptr);         //整块数据读取
         if (actual_read_main > 0) {
 //            LOGE("data%d", actual_read);
             allnum += actual_read_main;
             extract_length+=actual_read_main;
 //            extract();
 //            {   //存储离线数据
-//                if ((count < 800) && begin) {
+//                if ((count < 100) && begin) {
 //                    write(ffd, read_buffer_ptr, actual_read_main);
 //                    count++;
-//                } else if (count == 800) {
+//                } else if (count == 100) {
 //                    close(ffd);
 //                    count++;
 //                    LOGE("关闭文件");
@@ -90,7 +90,7 @@ void  * JudgeThreadFun(void *pArguments){
     pthread_exit(0);
 }
 
-
+extern "C"{
 //写USB函数很简单，只写四个字节的包头
     JNIEXPORT jint JNICALL  Java_ir_bigandsmall_hiddevice_D2ccDevice_WriteMemory  (JNIEnv *env,jobject thiz ) {
         out_buffer[0]=0xaa;

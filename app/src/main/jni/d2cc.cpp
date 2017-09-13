@@ -99,15 +99,31 @@ int Fifo::ReadFifoBulk(unsigned char ** dst) {
         return 0;
     }
     pthread_mutex_lock(fifoLock);
-    temp=*dst;  //缓冲区指针交换，为了节省时间
+    temp_read=*dst;  //缓冲区指针交换，为了节省时间
     *dst=data[readIndex];
-    data[readIndex]=temp;
+    data[readIndex]=temp_read;
     dataRemain[readIndex]=0;
     pthread_mutex_unlock(fifoLock);
 
     readIndex++;
     readIndex%=NrBuf;
     return size;
+}
+int Fifo::WriteFifoBulk(unsigned char ** src,int length) {
+    int size=dataRemain[writeIndex];  //缓冲区中有多少数据
+    if(size>0||length<=0){    //如果缓冲区中没有数据可读取就直接返回0
+        return 0;
+    }
+    pthread_mutex_lock(fifoLock);
+    temp_write=*src;  //缓冲区指针交换，为了节省时间
+    *src=data[writeIndex];
+    data[writeIndex]=temp_write;
+    dataRemain[writeIndex]=length;
+    pthread_mutex_unlock(fifoLock);
+
+    writeIndex++;
+    writeIndex%=NrBuf;
+    return length;
 }
 //写fifo
 int Fifo::WriteFifo(unsigned char *src, int length) {
@@ -119,7 +135,6 @@ D2cc::D2cc(){
     ProcThread=new pthread_t;
     readLock=new pthread_mutex_t;
     procLock=new pthread_mutex_t;
-//    proc_buffer=new unsigned char [LENGTH];
     pthread_mutex_init(readLock, NULL); //初始化互斥锁
     pthread_mutex_init(procLock, NULL);
 }
@@ -141,38 +156,29 @@ void  * D2cc::ReadThreadFun(void *pArguments){
     pthread_exit(0);
 }
 void D2cc::ReadLoop(){
-//    memset(&bt_in, 0, sizeof(bt_in));
     bt_in.ep = endPointIn;  //endpoint (received from Java)
-//    LOGE("bt_in.ep=%d",bt_in.ep);
     bt_in.timeout = 1000;    //  timeout in ms
     bt_in.len = LENGTH;      //      length of data
+    read_buffer=new unsigned char [LENGTH];
     int ret=0;
     while(isOpen) {
         if(!isreading){
             usleep(10000);
             continue;
         }
-        ret=fifoRead.getWriteBuff(&read_buffer);
-//        if(ret>0){
-//            LOGE("接收FIFO满");
-//        }
-        if(ret<=0){
-            bt_in.data = (void *)read_buffer;        //the data
-            int actual_read = ioctl(fd, USBDEVFS_BULK, &bt_in); //发送读USB命令给linux内核
-//            int actual_read=0;
-            if (actual_read > 8) {  //读到了数据
+        bt_in.data = (void *)read_buffer;        //the data
+        int actual_read = ioctl(fd, USBDEVFS_BULK, &bt_in); //发送读USB命令给linux内核
+        if (actual_read > 8) {  //读到了数据
 //                LOGE("读到数据%d",actual_read);
-                fifoRead.WriteDone(actual_read);
-            } else {    //没有读到数据
-//            LOGE("没读到，sleep");
-                usleep(1000);
-                continue;
+            while(fifoRead.WriteFifoBulk(&read_buffer,actual_read)<=0){
+//                LOGE("读fifo满");
+                usleep(1000);   //如果读fifo一直满，就等待1ms再继续存
             }
+        } else {    //没有读到数据
+            usleep(1000);
+            continue;
         }
-        else{   //如果预处理线程没有处理完数据，就不读取数据
-//            LOGE("读缓冲区满了");
-            usleep(100);
-        }
+
     }
 
 }
@@ -185,26 +191,24 @@ void  * D2cc::ProcThreadFun(void *pArguments){
 }
 void D2cc::ProcLoop(){
     LOGE("进入预处理线程");
+    proc_in_buffer=new unsigned char [LENGTH];
+    proc_out_buffer=new unsigned char [LENGTH];
     while(isOpen) {
         if(!isreading){
             usleep(10000);
             continue;
         }
-        read_out_buff_length=fifoRead.getReadBuff(&proc_buffer);
-        proc_in_buff_length=fifoProc.getWriteBuff(&out_pos);
-//        if(proc_in_buff_length>0){
-//            LOGE("预处理FIFO满");
-//        }
-        if(read_out_buff_length<=0||proc_in_buff_length>0){
-            usleep(1000);
+        read_out_buff_length=fifoRead.ReadFifoBulk(&proc_in_buffer);
+        if(read_out_buff_length<=0){
+//            LOGE("读fifo空");
+            usleep(500);
             continue;
         }
-//        LOGE("预处理线程检测到数据");
         int ret=extractReadData();      //预处理一个数据包
-//        LOGE("一包数据预处理完成");
-//        int ret=0;
-        fifoRead.ReadDone();
-        fifoProc.WriteDone(ret);
+        while(fifoProc.WriteFifoBulk(&proc_out_buffer,ret)<=0){
+//            LOGE("预处理fifo满");
+            usleep(500);
+        }
         data_available+=ret;
 
     }
@@ -214,6 +218,7 @@ void D2cc::ProcLoop(){
 int D2cc::extractReadData(){
     int totalData = 0;
     int var17 = read_out_buff_length;   //USB接收缓冲区的长度
+    proc_out_buffer_pos=proc_out_buffer;
     int var18 = var17 / MaxPacketSize + (var17 % MaxPacketSize > 0?1:0);
     for(int ex = 0; ex < var18; ++ex) {
         int var19;
@@ -224,15 +229,15 @@ int D2cc::extractReadData(){
             var19 = ex * MaxPacketSize;
             var19 += 2;
             if(var19!=var20){   //如果数据包只有2字节，就不要了
-                memcpy(out_pos,proc_buffer+ex * MaxPacketSize+2,var20-var19);     //把剩余的数据都取出来
+                memcpy(proc_out_buffer_pos,proc_in_buffer+ex * MaxPacketSize+2,var20-var19);     //把剩余的数据都取出来
             }
         } else {
             var20 = (ex + 1) * MaxPacketSize;
             var19 = ex * MaxPacketSize + 2;
-            memcpy(out_pos,proc_buffer+ex * MaxPacketSize+2,var20-var19);
+            memcpy(proc_out_buffer_pos,proc_in_buffer+ex * MaxPacketSize+2,var20-var19);
         }
         totalData += var20 - var19;
-        out_pos+=(var20 - var19);   //指针指向预处理缓冲区下一个位置
+        proc_out_buffer_pos+=(var20 - var19);   //指针指向预处理缓冲区下一个位置
     }
     return totalData;
 }
