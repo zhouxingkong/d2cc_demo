@@ -44,17 +44,17 @@ void  * ReadDeviceFun(void *pArguments){
     while(isreading) {
 
 //        actual_read_main=d2cc.Read(read_buffer_ptr,4096*16,0);
-        actual_read_main=d2cc.BulkRead(read_buffer_ptr);
+        actual_read_main=d2cc.BulkRead(&read_buffer_ptr);
         if (actual_read_main > 0) {
 //            LOGE("data%d", actual_read);
             allnum += actual_read_main;
             extract_length+=actual_read_main;
 //            extract();
 //            {   //存储离线数据
-//                if ((count < 1000) && begin) {
+//                if ((count < 800) && begin) {
 //                    write(ffd, read_buffer_ptr, actual_read_main);
 //                    count++;
-//                } else if (count == 1000) {
+//                } else if (count == 800) {
 //                    close(ffd);
 //                    count++;
 //                    LOGE("关闭文件");
@@ -90,23 +90,6 @@ void  * JudgeThreadFun(void *pArguments){
     pthread_exit(0);
 }
 
-
-
-
-extern "C" {
-//    JNIEXPORT void JNICALL Java_ir_bigandsmall_hiddevice_D2ccDevice_OpenDevice  (JNIEnv *env , jobject thiz ,
-//            jint jfdesc, jint jEndPointIn, jint jEndPointOut) {
-//        LOGI("进入C的open");
-//        ffd=open(DATA_PATH, O_WRONLY|O_CREAT, 0);
-//        read_buffer_ptr=buff1;
-//        d2cc=new D2cc;
-//        d2cc->OpenDevice(jfdesc,jEndPointIn,jEndPointOut);
-//    //        LOGI("文件描述符%d",fdesc);
-//    }
-//    JNIEXPORT void JNICALL
-//    Java_ir_bigandsmall_hiddevice_D2ccDevice_CloseDevice(JNIEnv *env, jobject instance) {
-//        d2cc->CloseDevice();
-//    }
 
 //写USB函数很简单，只写四个字节的包头
     JNIEXPORT jint JNICALL  Java_ir_bigandsmall_hiddevice_D2ccDevice_WriteMemory  (JNIEnv *env,jobject thiz ) {
@@ -150,6 +133,7 @@ extern "C" {
                                                         jint jEndPointIn, jint jEndPointOut) {
         LOGE("进入C++OPEN");
 //        d2cc=new D2cc;
+        ffd=open(DATA_PATH, O_WRONLY|O_CREAT, 0);
         d2cc.OpenDevice(jfdesc, jEndPointIn, jEndPointOut);
 //        D2cc::getInstance()->OpenDevice(jfdesc, jEndPointIn, jEndPointOut);
         //        LOGI("文件描述符%d",fdesc);

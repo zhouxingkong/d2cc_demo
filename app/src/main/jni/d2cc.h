@@ -131,7 +131,7 @@ public:
      * @return:成功接收的字节数，没接收到返回0
      * @dst:接收数据目的地址
      * */
-    int BulkRead(unsigned char *dst); //整块数据读取
+    int BulkRead(unsigned char **dst); //整块数据读取
     /* 发送USB数据
      * @return:成功发送的字节数，没发送成功返回0
      * @src:发送数据的首地址

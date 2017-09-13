@@ -43,7 +43,7 @@ public class D2ccManager {
     private static final String VENDORID="1027";
     //private static final String PRODUCTID="24577";        //FT245
     //private static final String PRODUCTID="24607";        //FT601
-    private static final String PRODUCTID="24596";      //FT232
+//    private static final String PRODUCTID="24596";      //FT232
 
 
     //各种静态常数，从d2xx照抄
@@ -106,6 +106,8 @@ public class D2ccManager {
         manager = (UsbManager) context.getSystemService(Context.USB_SERVICE);
         permissionIntent = PendingIntent.getBroadcast (context, 0, new Intent(ACTION_USB_PERMISSION), 0);
         IntentFilter filter = new IntentFilter(ACTION_USB_PERMISSION);
+        filter.addAction("android.hardware.usb.action.USB_DEVICE_ATTACHED");
+        filter.addAction("android.hardware.usb.action.USB_DEVICE_DETACHED");
         context.getApplicationContext().registerReceiver(mUsbReceiver,filter);    //注册USB广播的接收
         d2ccDevice = new D2ccDevice();
     }
@@ -143,10 +145,11 @@ public class D2ccManager {
             final HashMap<String, UsbDevice> usb_device_list = manager.getDeviceList(); //获取USB设备列表
             for(final String desc : usb_device_list.keySet()) { //遍历整个hash表
                 final UsbDevice candidate = usb_device_list.get(desc);
-                System.out.println("VID="+candidate.getVendorId()+"  PID="+candidate.getProductId());
-                if(String.valueOf(candidate.getVendorId()).equals(VENDORID)&&String.valueOf(candidate.getProductId()).equals(PRODUCTID)) {  //查看USB设备信息是否正确
+//                System.out.println("VID="+candidate.getVendorId()+"  PID="+candidate.getProductId());
+                if(String.valueOf(candidate.getVendorId()).equals(VENDORID)/*&&String.valueOf(candidate.getProductId()).equals(PRODUCTID)*/) {  //查看USB设备信息是否正确
                     deviceD2cc = candidate;
                     System.out.println("发现设备");
+                    break;
                 }
             }
             if(deviceD2cc != null) manager.requestPermission(deviceD2cc, permissionIntent); //申请访问USB权限
@@ -160,7 +163,7 @@ public class D2ccManager {
             String action = intent.getAction();
             System.out.println("检测到USB了！！！！！！");
             //if(ACTION_USB_PERMISSION.equals(action)) {
-            if("ir.bigandsmall.hiddevice.USB".equals(action)){ //USB插入事件
+            if(ACTION_USB_PERMISSION.equals(action)){ //USB插入事件
                 if(intent.getBooleanExtra(UsbManager.EXTRA_PERMISSION_GRANTED, false)) {
                     if(deviceD2cc == null) {
                         return;

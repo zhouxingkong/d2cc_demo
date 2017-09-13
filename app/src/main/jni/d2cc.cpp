@@ -72,7 +72,7 @@ int Fifo::ReadFifo(unsigned char *dst, int length, int off) {
     while(already_read<length){
         size=dataRemain[readIndex];
         if(size==0){
-            usleep(10000);
+            usleep(1000);
             continue;
         }
         src=data[readIndex];
@@ -146,12 +146,17 @@ void D2cc::ReadLoop(){
 //    LOGE("bt_in.ep=%d",bt_in.ep);
     bt_in.timeout = 1000;    //  timeout in ms
     bt_in.len = LENGTH;      //      length of data
+    int ret=0;
     while(isOpen) {
         if(!isreading){
             usleep(10000);
             continue;
         }
-        if(fifoRead.getWriteBuff(&read_buffer)==0){
+        ret=fifoRead.getWriteBuff(&read_buffer);
+//        if(ret>0){
+//            LOGE("接收FIFO满");
+//        }
+        if(ret<=0){
             bt_in.data = (void *)read_buffer;        //the data
             int actual_read = ioctl(fd, USBDEVFS_BULK, &bt_in); //发送读USB命令给linux内核
 //            int actual_read=0;
@@ -187,9 +192,9 @@ void D2cc::ProcLoop(){
         }
         read_out_buff_length=fifoRead.getReadBuff(&proc_buffer);
         proc_in_buff_length=fifoProc.getWriteBuff(&out_pos);
-        if(proc_in_buff_length>0){
-            LOGE("预处理FIFO满");
-        }
+//        if(proc_in_buff_length>0){
+//            LOGE("预处理FIFO满");
+//        }
         if(read_out_buff_length<=0||proc_in_buff_length>0){
             usleep(1000);
             continue;
@@ -300,11 +305,11 @@ int D2cc::Read(unsigned char * dst,int length,int off){
 /*
  * 整块读取数据（一块大概4096*4byte）
  * */
-int D2cc::BulkRead(unsigned char *dst) {
-    if(dst==NULL){  //如果没分配内存就分配一个，不然程序会闪退
-        dst=new unsigned char [LENGTH];
+int D2cc::BulkRead(unsigned char **dst) {
+    if(*dst==NULL){  //如果没分配内存就分配一个，不然程序会闪退
+        *dst=new unsigned char [LENGTH];
     }
-    int size=fifoProc.ReadFifoBulk(&dst);  //缓冲区中有多少数据
+    int size=fifoProc.ReadFifoBulk(dst);  //缓冲区中有多少数据
     if(size>0){
         data_available-=size;
     }
