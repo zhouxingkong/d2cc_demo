@@ -12,6 +12,7 @@ Fifo::Fifo(){
         data[i]=new unsigned char [LENGTH];
         dataRemain[i]=0;
     }
+    fifoLock=new pthread_mutex_t;
     pthread_mutex_init(fifoLock, NULL); //初始化互斥锁
 }
 Fifo::~Fifo(){
@@ -31,6 +32,7 @@ int Fifo::getReadBuff(unsigned char ** buff){
     }
 }
 int Fifo::getWriteBuff(unsigned char ** buff){
+//    LOGE("进入getWriteBuff");
     int size=dataRemain[writeIndex];  //缓冲区中有多少数据
     if(size>0){    //如果缓冲区中已经有数据
         return size;
@@ -46,6 +48,7 @@ bool Fifo::ReadDone(){
     pthread_mutex_unlock(fifoLock);
     readIndex++;
     readIndex%=NrBuf;
+    return true;
 
 }
 bool Fifo::WriteDone(int num){
@@ -54,6 +57,8 @@ bool Fifo::WriteDone(int num){
     pthread_mutex_unlock(fifoLock);
     writeIndex++;
     writeIndex%=NrBuf;
+//    LOGE("WriteDone结束");
+    return true;
 }
 //读fifo
 int Fifo::ReadFifo(unsigned char *dst, int length, int off) {
@@ -63,17 +68,18 @@ int Fifo::ReadFifo(unsigned char *dst, int length, int off) {
     int size=0;  //缓冲区中有多少数据
     int cpy_length=0;
     int already_read=0;
+    unsigned char * src;
     while(already_read<length){
         size=dataRemain[readIndex];
         if(size==0){
             usleep(10000);
             continue;
         }
-        unsigned char * src=data[readIndex];
-        cpy_length=(length>size)?size:length;   //选最小的那个
-        memcpy(dst+off,src,cpy_length);
+        src=data[readIndex];
+        cpy_length=((length-already_read)>size)?size:(length-already_read);   //选最小的那个
+        memcpy(dst+off+already_read,src,cpy_length);
         pthread_mutex_lock(fifoLock);
-        dataRemain[readIndex]=size-cpy_length; //标志该缓冲区为空
+        dataRemain[readIndex]=size-cpy_length;
         already_read+=cpy_length;
         pthread_mutex_unlock(fifoLock);
         if(size==cpy_length){   //一行缓冲区读完
@@ -113,6 +119,7 @@ D2cc::D2cc(){
     ProcThread=new pthread_t;
     readLock=new pthread_mutex_t;
     procLock=new pthread_mutex_t;
+//    proc_buffer=new unsigned char [LENGTH];
     pthread_mutex_init(readLock, NULL); //初始化互斥锁
     pthread_mutex_init(procLock, NULL);
 }
@@ -134,9 +141,10 @@ void  * D2cc::ReadThreadFun(void *pArguments){
     pthread_exit(0);
 }
 void D2cc::ReadLoop(){
-    memset(&bt_in, 0, sizeof(bt_in));
+//    memset(&bt_in, 0, sizeof(bt_in));
     bt_in.ep = endPointIn;  //endpoint (received from Java)
-    bt_in.timeout = 0;    //  timeout in ms
+//    LOGE("bt_in.ep=%d",bt_in.ep);
+    bt_in.timeout = 1000;    //  timeout in ms
     bt_in.len = LENGTH;      //      length of data
     while(isOpen) {
         if(!isreading){
@@ -144,14 +152,15 @@ void D2cc::ReadLoop(){
             continue;
         }
         if(fifoRead.getWriteBuff(&read_buffer)==0){
-            bt_in.data = read_buffer;        //the data
+            bt_in.data = (void *)read_buffer;        //the data
             int actual_read = ioctl(fd, USBDEVFS_BULK, &bt_in); //发送读USB命令给linux内核
-            if (actual_read > 2) {  //读到了数据
+//            int actual_read=0;
+            if (actual_read > 8) {  //读到了数据
 //                LOGE("读到数据%d",actual_read);
                 fifoRead.WriteDone(actual_read);
             } else {    //没有读到数据
 //            LOGE("没读到，sleep");
-                //usleep(1000);
+                usleep(1000);
                 continue;
             }
         }
@@ -178,11 +187,17 @@ void D2cc::ProcLoop(){
         }
         read_out_buff_length=fifoRead.getReadBuff(&proc_buffer);
         proc_in_buff_length=fifoProc.getWriteBuff(&out_pos);
+        if(proc_in_buff_length>0){
+            LOGE("预处理FIFO满");
+        }
         if(read_out_buff_length<=0||proc_in_buff_length>0){
             usleep(1000);
             continue;
         }
+//        LOGE("预处理线程检测到数据");
         int ret=extractReadData();      //预处理一个数据包
+//        LOGE("一包数据预处理完成");
+//        int ret=0;
         fifoRead.ReadDone();
         fifoProc.WriteDone(ret);
         data_available+=ret;
@@ -218,6 +233,7 @@ int D2cc::extractReadData(){
 }
 
 void D2cc::OpenDevice(int fdesc,int epIn,int epOut){
+    LOGE("C++的OpenDevice函数,fd=%d",fdesc);
     fd=fdesc;
     endPointIn=epIn;
     endPointout=epOut;
@@ -291,22 +307,7 @@ int D2cc::BulkRead(unsigned char *dst) {
     int size=fifoProc.ReadFifoBulk(&dst);  //缓冲区中有多少数据
     if(size>0){
         data_available-=size;
-        return size;
     }
-    else{
-        return size;
-    }
+    return size;
 }
 
-extern "C" {
-    JNIEXPORT void JNICALL
-    Java_ir_bigandsmall_hiddevice_D2ccDevice_OpenDevice(JNIEnv *env, jobject thiz, jint jfdesc,
-                                                        jint jEndPointIn, jint jEndPointOut) {
-        D2cc::getInstance()->OpenDevice(jfdesc, jEndPointIn, jEndPointOut);
-        //        LOGI("文件描述符%d",fdesc);
-    }
-    JNIEXPORT void JNICALL
-    Java_ir_bigandsmall_hiddevice_D2ccDevice_CloseDevice(JNIEnv *env, jobject instance) {
-        D2cc::getInstance()->CloseDevice();
-    }
-}

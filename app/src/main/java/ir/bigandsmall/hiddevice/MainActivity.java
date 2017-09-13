@@ -5,7 +5,6 @@ import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
-import android.content.IntentFilter;
 import android.hardware.usb.UsbConstants;
 import android.hardware.usb.UsbDevice;
 import android.hardware.usb.UsbDeviceConnection;
@@ -16,8 +15,6 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.view.View;
 import android.widget.Button;
-
-import java.util.HashMap;
 
 public class MainActivity extends Activity {
 
@@ -32,6 +29,7 @@ public class MainActivity extends Activity {
     private UsbEndpoint mEndpointIn=null;
     private UsbEndpoint mEndpointOut=null;
     private D2ccDevice d2ccDevice;
+    private D2ccManager d2ccManager;
     private int mInterfaceID;
 
     Handler mHandler = new Handler();
@@ -53,6 +51,7 @@ public class MainActivity extends Activity {
         setContentView(R.layout.activity_main);
         //boolean isRoot=upgradeRootPermission(getPackageCodePath());
         //System.out.println(isRoot?"是root":"GG了");
+
 
         intent = getIntent();
         btn_open=(Button)findViewById(R.id.button_open);
@@ -76,11 +75,17 @@ public class MainActivity extends Activity {
                 WriteMemClick(v);
             }
         });
-        d2ccDevice = new D2ccDevice();
-        manager = (UsbManager) getSystemService(Context.USB_SERVICE);
-        permissionIntent = PendingIntent.getBroadcast (this, 0, new Intent(ACTION_USB_PERMISSION), 0);
-        IntentFilter filter = new IntentFilter(ACTION_USB_PERMISSION);
-        registerReceiver(mUsbReceiver,filter);    //注册USB广播的接收
+
+
+//        byte [] a=new byte[]{1,2,3,4,5};
+//        byte [] b=new byte[]{5,4,3,2,1};
+//        d2ccDevice.ArrayTest(a,b);
+//        System.out.println("最终B="+b[0]);
+        D2ccManager.getInstance(this);
+//        manager = (UsbManager) getSystemService(Context.USB_SERVICE);
+//        permissionIntent = PendingIntent.getBroadcast (this, 0, new Intent(ACTION_USB_PERMISSION), 0);
+//        IntentFilter filter = new IntentFilter(ACTION_USB_PERMISSION);
+//        registerReceiver(mUsbReceiver,filter);    //注册USB广播的接收
 
 //        mHandler.postDelayed(runnable,1000);
     }
@@ -91,12 +96,12 @@ public class MainActivity extends Activity {
 //            data[i]=(byte)(i%128);
 //        }
 //        thread_write.start();
-        int nameRet =  d2ccDevice.WriteMemory();
+        int nameRet =  D2ccManager.getInstance().getD2ccDevice().WriteMemory();
     }
 
     public void ReadMemClick(View v) {
 //        thread_read.start();
-        int nameRet =  d2ccDevice.ReadMemory();
+        int nameRet =  D2ccManager.getInstance().getD2ccDevice().ReadMemory();
     }
 
     public void CloseDeviceClick(View v) {
@@ -106,22 +111,23 @@ public class MainActivity extends Activity {
     }
 
     public void OpenDeviceClick(View v) {
-        deviceSepronik = null;
-        System.out.println("按钮点击！！！");
-        UsbDevice device = (UsbDevice)intent.getParcelableExtra(UsbManager.EXTRA_DEVICE);
-        if(device == null) {
-            //final UsbManager manager = (UsbManager)getSystemService(Context.USB_SERVICE);   //获取USB manager实例
-            final HashMap<String, UsbDevice> usb_device_list = manager.getDeviceList(); //获取USB设备列表
-            for(final String desc : usb_device_list.keySet()) { //遍历整个hash表
-                final UsbDevice candidate = usb_device_list.get(desc);
-                System.out.println("VID="+candidate.getVendorId()+"  PID="+candidate.getProductId());
-                if(String.valueOf(candidate.getVendorId()).equals(VENDORID)&&String.valueOf(candidate.getProductId()).equals(PRODUCTID)) {  //查看USB设备信息是否正确
-                    deviceSepronik = candidate;
-                    System.out.println("发现设备");
-                }
-            }
-            if(deviceSepronik != null) manager.requestPermission(deviceSepronik, permissionIntent); //申请访问USB权限
-        }
+        D2ccManager.getInstance().OpenDevice();
+//        deviceSepronik = null;
+//        System.out.println("按钮点击！！！");
+//        UsbDevice device = (UsbDevice)intent.getParcelableExtra(UsbManager.EXTRA_DEVICE);
+//        if(device == null) {
+//            //final UsbManager manager = (UsbManager)getSystemService(Context.USB_SERVICE);   //获取USB manager实例
+//            final HashMap<String, UsbDevice> usb_device_list = manager.getDeviceList(); //获取USB设备列表
+//            for(final String desc : usb_device_list.keySet()) { //遍历整个hash表
+//                final UsbDevice candidate = usb_device_list.get(desc);
+//                System.out.println("VID="+candidate.getVendorId()+"  PID="+candidate.getProductId());
+//                if(String.valueOf(candidate.getVendorId()).equals(VENDORID)&&String.valueOf(candidate.getProductId()).equals(PRODUCTID)) {  //查看USB设备信息是否正确
+//                    deviceSepronik = candidate;
+//                    System.out.println("发现设备");
+//                }
+//            }
+//            if(deviceSepronik != null) manager.requestPermission(deviceSepronik, permissionIntent); //申请访问USB权限
+//        }
     }
 
     public final BroadcastReceiver mUsbReceiver = new BroadcastReceiver() {

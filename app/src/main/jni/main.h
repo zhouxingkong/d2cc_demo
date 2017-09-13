@@ -21,7 +21,7 @@
 pthread_t *ReadThreadmain;
 pthread_t *JudgeThreadmain;
 
-D2cc *d2cc;
+D2cc d2cc;
 
 int endPointIn1;
 int endPointOut1;

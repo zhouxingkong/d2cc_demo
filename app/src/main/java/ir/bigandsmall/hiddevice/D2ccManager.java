@@ -107,9 +107,14 @@ public class D2ccManager {
         permissionIntent = PendingIntent.getBroadcast (context, 0, new Intent(ACTION_USB_PERMISSION), 0);
         IntentFilter filter = new IntentFilter(ACTION_USB_PERMISSION);
         context.getApplicationContext().registerReceiver(mUsbReceiver,filter);    //注册USB广播的接收
+        d2ccDevice = new D2ccDevice();
     }
-
-    public D2ccManager getInstance(Context context1){
+    /*  获取D2ccManager类的静态实例。第一次调用系统会自动创建实例，
+    *   之后再调用就会返回第一次创建的实例
+    *   @return:静态实例mInstance
+    *   @context1:由Activity传来的Context对象
+    * */
+    public static D2ccManager getInstance(Context context1){
         if(mInstance==null){
             synchronized (D2ccManager.class){
                 if(mInstance==null){
@@ -119,9 +124,18 @@ public class D2ccManager {
         }
         return mInstance;
     }
+
+    public static D2ccManager getInstance(){
+        return mInstance;
+    }
+    /*  打开USB设备：若已经存在打开的设备此函数胡就啥也不做
+    *   如果没有已打开的设备，函数会遍历Android系统接入的所有USB设备，对比设备的PID；VID是否符合要求
+    *   若符合要求就向Android系统申请该USB设备的访问权限。系统发送android.hardware.usb.action.USB_DEVICE_ATTACHED广播
+    *   @return:静态实例mInstance
+    *   @context1:由Activity传来的Context对象
+    * */
     public void OpenDevice(){
         deviceD2cc= null;
-//        System.out.println("按钮点击！！！");
         //UsbDevice device = (UsbDevice)intent.getParcelableExtra(UsbManager.EXTRA_DEVICE);
         //if(device == null) {
         if(!isOpen()) {
@@ -144,9 +158,9 @@ public class D2ccManager {
 
         public void onReceive(Context context, Intent intent) {
             String action = intent.getAction();
-            //System.out.println("检测到USB了！！！！！！");
+            System.out.println("检测到USB了！！！！！！");
             //if(ACTION_USB_PERMISSION.equals(action)) {
-            if("android.hardware.usb.action.USB_DEVICE_ATTACHED".equals(action)){ //USB插入事件
+            if("ir.bigandsmall.hiddevice.USB".equals(action)){ //USB插入事件
                 if(intent.getBooleanExtra(UsbManager.EXTRA_PERMISSION_GRANTED, false)) {
                     if(deviceD2cc == null) {
                         return;
@@ -184,9 +198,11 @@ public class D2ccManager {
                         //打开USB设备
                         connection = manager.openDevice(deviceD2cc);
                         if (connection != null&&connection.claimInterface(intf, true)) {
-                            setBitMode((byte) 0, FT_BITMODE_SYNC_FIFO);    //配置USB工作在同步FIFO模式
-                            d2ccDevice.OpenDevice(connection.getFileDescriptor(),inEndPoint,outEndPoint);    //在native代码中打开USB设备文件
                             mIsOpen=true;
+                            setBitMode((byte) 0, FT_BITMODE_SYNC_FIFO);    //配置USB工作在同步FIFO模式
+                            System.out.println("准备进入C++ open函数");
+                            d2ccDevice.OpenDevice(connection.getFileDescriptor(),inEndPoint,outEndPoint);    //在native代码中打开USB设备文件
+
                             break;  //找到可读写的节点后就跳出循环
                         }
                     }
@@ -204,6 +220,9 @@ public class D2ccManager {
     //USB设备是否已打开
     public synchronized boolean isOpen() {
         return this.mIsOpen;
+    }
+    public D2ccDevice getD2ccDevice(){
+        return d2ccDevice;
     }
 
     UsbDeviceConnection getConnection() {

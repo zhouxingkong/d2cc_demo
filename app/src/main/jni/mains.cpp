@@ -40,9 +40,11 @@ void extract(){
 
 void  * ReadDeviceFun(void *pArguments){
     LOGE("进入主读线程");
+    read_buffer_ptr=new unsigned char [4096*4];
     while(isreading) {
 
-        actual_read_main=d2cc->Read(read_buffer_ptr,4096*4,0);
+//        actual_read_main=d2cc.Read(read_buffer_ptr,4096*16,0);
+        actual_read_main=d2cc.BulkRead(read_buffer_ptr);
         if (actual_read_main > 0) {
 //            LOGE("data%d", actual_read);
             allnum += actual_read_main;
@@ -61,7 +63,7 @@ void  * ReadDeviceFun(void *pArguments){
 //            judge_error(actual_read);
         } else {
 //            LOGE("没读到，sleep");
-            //usleep(1000);
+            usleep(1000);
             continue;
         }
     }
@@ -112,7 +114,7 @@ extern "C" {
         out_buffer[1]=0xab;
         out_buffer[2]=0xac;
         out_buffer[3]=0xad;
-        d2cc->Write(out_buffer,4);
+        d2cc.Write(out_buffer,4);
         begin=1;
         return 1;
     }
@@ -128,5 +130,32 @@ extern "C" {
         int result2 = pthread_create(JudgeThreadmain, NULL, JudgeThreadFun, (void*)NULL);
 //
         return 1;
+    }
+
+    JNIEXPORT void JNICALL
+    Java_ir_bigandsmall_hiddevice_D2ccDevice_ArrayTest(JNIEnv *env, jobject instance, jbyteArray in_,
+                                                       jbyteArray out_) {
+        jbyte *in = env->GetByteArrayElements(in_, NULL);
+        jbyte *out = env->GetByteArrayElements(out_, NULL);
+
+        out[0]=in[0];
+        // TODO
+
+        env->ReleaseByteArrayElements(in_, in, 0);
+        env->ReleaseByteArrayElements(out_, out, 0);
+    }
+
+    JNIEXPORT void JNICALL
+    Java_ir_bigandsmall_hiddevice_D2ccDevice_OpenDevice(JNIEnv *env, jobject thiz, jint jfdesc,
+                                                        jint jEndPointIn, jint jEndPointOut) {
+        LOGE("进入C++OPEN");
+//        d2cc=new D2cc;
+        d2cc.OpenDevice(jfdesc, jEndPointIn, jEndPointOut);
+//        D2cc::getInstance()->OpenDevice(jfdesc, jEndPointIn, jEndPointOut);
+        //        LOGI("文件描述符%d",fdesc);
+    }
+    JNIEXPORT void JNICALL
+    Java_ir_bigandsmall_hiddevice_D2ccDevice_CloseDevice(JNIEnv *env, jobject instance) {
+        d2cc.CloseDevice();
     }
 }

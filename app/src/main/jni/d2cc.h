@@ -91,7 +91,7 @@ private:
 //    int actual_read = 0;  //每次读取实际读到的数
     bool isreading = 1;   //是否开始读
     bool isopen=1;
-protected:
+public:
     D2cc();
     static D2cc *mInstance;
 
@@ -111,13 +111,17 @@ public:
      * return:单例模式的D2xx实例
      * */
     static D2cc* getInstance();
-    void CloseDevice(); //关闭设备
     /*
-     * 返回接收缓冲区中剩余数据量
+     * 关闭USB设备：暂停USB读取的进程，当再次调用OpenDevice则继续读取
+     * */
+    void CloseDevice();
+    /*
+     * 返回接收缓冲区中剩余数据字节数
      * */
     int GetAvailable();
-    /* 读取USB任意长度数据
-     * @return:成功接收的字节数，没接收到返回0
+    /* 从USB接收缓冲区中读取任意长度数据。函数会根据需要读取的数据量逐个遍历USB接收FIFO进行读取。
+     * 若USB缓冲区没有足够数据读取，此函数会进入sleep状态等待，直到读取数据量达到length。
+     * @return:成功接收的字节数
      * @dst:接收数据目的地址
      * @length:接收数据字节数
      * @off:数据放在dst数组的位置
