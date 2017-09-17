@@ -11,16 +11,16 @@ d2cc库分为两个部分：
 1. java程序：应用程序使用java语言来调用这个部分，作用为打开USB设备、申请USB访问权限（响应Android系统USB设备广播）。
 2. C++程序：应用程序使用C++语言来调用这个部分。此部分作用为使用ioctl机制对系统底层USB驱动程序进行调用，实现高速的USB数据读写。
 应用程序使用d2cc库的方法如下图所示：
-![](https://github.com/zhouxingkong/d2cc_demo/raw/struct.png)
+![](https://github.com/zhouxingkong/d2cc_demo/raw/master/raw/struct.png)
 使用d2cc库需要应用程序同样工作在java和C++两个空间，并分别调用d2cc两个部分的库函数。（详细请参考d2cc_demo示例程序）
 
 ## 2使用d2cc库的步骤
 
 1. 将D2ccManager.java、d2cc.cpp、d2cc.h三个文件导入Android工程。工程目录可参考下图：
-![](https://github.com/zhouxingkong/d2cc_demo/raw/dir.png)
+![](https://github.com/zhouxingkong/d2cc_demo/raw/master/raw/dir.png)
 
 2. 编写CMakeList.txt用来编译C++代码。参考下图：
-![](https://github.com/zhouxingkong/d2cc_demo/raw/cmake.png)
+![](https://github.com/zhouxingkong/d2cc_demo/raw/master/raw/cmake.png)
 
 3. 编写java层程序调用D2ccManager.java中的方法来实例化D2ccManager类并打开USB设备。
 ``` java
