@@ -14,8 +14,6 @@ import android.hardware.usb.UsbManager;
 
 import java.util.HashMap;
 
-import static ir.bigandsmall.hiddevice.MainActivity.permissionIntent;
-
 /**
  * Created by xingkong on 2017/3/13.
  */
@@ -33,8 +31,10 @@ public class D2ccManager {
     private UsbInterface mUsbInterface;
     private UsbEndpoint mEndpointIn=null;
     private UsbEndpoint mEndpointOut=null;
-    private D2ccDevice d2ccDevice;
+    private ClientJni clientJni;
     private int mInterfaceID;
+
+    public static PendingIntent permissionIntent;
 
     private boolean mIsOpen;    //USB设备是否已打开
     private static D2ccManager mInstance;
@@ -109,7 +109,7 @@ public class D2ccManager {
         filter.addAction("android.hardware.usb.action.USB_DEVICE_ATTACHED");
         filter.addAction("android.hardware.usb.action.USB_DEVICE_DETACHED");
         context.getApplicationContext().registerReceiver(mUsbReceiver,filter);    //注册USB广播的接收
-        d2ccDevice = new D2ccDevice();
+        clientJni = new ClientJni();
     }
     /*  获取D2ccManager类的静态实例。第一次调用系统会自动创建实例，
     *   之后再调用就会返回第一次创建的实例
@@ -204,7 +204,7 @@ public class D2ccManager {
                             mIsOpen=true;
                             setBitMode((byte) 0, FT_BITMODE_SYNC_FIFO);    //配置USB工作在同步FIFO模式
                             System.out.println("准备进入C++ open函数");
-                            d2ccDevice.OpenDevice(connection.getFileDescriptor(),inEndPoint,outEndPoint);    //在native代码中打开USB设备文件
+                            OpenDevice(connection.getFileDescriptor(),inEndPoint,outEndPoint);    //在native代码中打开USB设备文件
 
                             break;  //找到可读写的节点后就跳出循环
                         }
@@ -214,18 +214,26 @@ public class D2ccManager {
 
             }   //end if(ACTION_USB_PERMISSION.equals(action))
             if("android.hardware.usb.action.USB_DEVICE_DETACHED".equals(action)) {
-                d2ccDevice.CloseDevice();
+                CloseDevice();
                 mIsOpen=false;
             }
         }
     };  //end： 广播内容
 
+
+    static {
+        System.loadLibrary("d2cc");
+    }
+    //从D2ccManager.java这种调用，作用为传递打开USB设备文件的描述信息。用户不需要修改
+    public native void OpenDevice(int fd, int endPointIn,int endPointOut);
+    public native void CloseDevice();
+
     //USB设备是否已打开
     public synchronized boolean isOpen() {
         return this.mIsOpen;
     }
-    public D2ccDevice getD2ccDevice(){
-        return d2ccDevice;
+    public ClientJni getClientJni(){
+        return clientJni;
     }
 
     UsbDeviceConnection getConnection() {

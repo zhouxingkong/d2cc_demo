@@ -81,7 +81,7 @@ void  * JudgeThreadFun(void *pArguments){
         packages=0;
         LOGE("总共丢包%d",lost-1);
 //        lost=0;
-        LOGE("一秒接收字节%d",allnum);
+        LOGE("一秒接收字节%ld",allnum);
         allnum=0;
 //        LOGE("误码个数%d",errors/2);
 //        errors=0;
@@ -90,9 +90,12 @@ void  * JudgeThreadFun(void *pArguments){
     pthread_exit(0);
 }
 
-extern "C"{
+
+
+
+extern "C" {
 //写USB函数很简单，只写四个字节的包头
-    JNIEXPORT jint JNICALL  Java_ir_bigandsmall_hiddevice_D2ccDevice_WriteMemory  (JNIEnv *env,jobject thiz ) {
+    JNIEXPORT jint JNICALL  Java_ir_bigandsmall_hiddevice_ClientJni_WriteMemory  (JNIEnv *env,jobject thiz ) {
         out_buffer[0]=0xaa;
         out_buffer[1]=0xab;
         out_buffer[2]=0xac;
@@ -102,7 +105,7 @@ extern "C"{
         return 1;
     }
 
-    JNIEXPORT jshort JNICALL  Java_ir_bigandsmall_hiddevice_D2ccDevice_ReadMemory
+    JNIEXPORT jshort JNICALL  Java_ir_bigandsmall_hiddevice_ClientJni_ReadMemory
             (JNIEnv *env,jclass clazz){
 //        read_buffer=buff1;
 //        judge_buffer=buff1;
@@ -128,18 +131,19 @@ extern "C"{
         env->ReleaseByteArrayElements(out_, out, 0);
     }
 
-    JNIEXPORT void JNICALL
-    Java_ir_bigandsmall_hiddevice_D2ccDevice_OpenDevice(JNIEnv *env, jobject thiz, jint jfdesc,
-                                                        jint jEndPointIn, jint jEndPointOut) {
-        LOGE("进入C++OPEN");
+JNIEXPORT void JNICALL
+Java_ir_bigandsmall_hiddevice_D2ccManager_OpenDevice__III(JNIEnv *env, jobject instance, jint fd,
+                                                          jint endPointIn, jint endPointOut) {
+    LOGE("进入C++OPEN");
 //        d2cc=new D2cc;
-        ffd=open(DATA_PATH, O_WRONLY|O_CREAT, 0);
-        d2cc.OpenDevice(jfdesc, jEndPointIn, jEndPointOut);
-//        D2cc::getInstance()->OpenDevice(jfdesc, jEndPointIn, jEndPointOut);
-        //        LOGI("文件描述符%d",fdesc);
-    }
-    JNIEXPORT void JNICALL
-    Java_ir_bigandsmall_hiddevice_D2ccDevice_CloseDevice(JNIEnv *env, jobject instance) {
-        d2cc.CloseDevice();
-    }
+    ffd=open(DATA_PATH, O_WRONLY|O_CREAT, 0);
+    d2cc.OpenDevice(fd, endPointIn, endPointOut);
+}
+
+JNIEXPORT void JNICALL
+Java_ir_bigandsmall_hiddevice_D2ccManager_CloseDevice(JNIEnv *env, jobject instance) {
+    d2cc.CloseDevice();
+}
+
+
 }
